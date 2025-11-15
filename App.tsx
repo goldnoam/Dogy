@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useCallback, useReducer, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useReducer, useRef, useLayoutEffect } from 'react';
 import { GameScreen } from './components/GameScreen';
 import { StartScreen } from './components/StartScreen';
 import { GameOverScreen } from './components/GameOverScreen';
@@ -56,10 +56,35 @@ const App: React.FC = () => {
   const [gameState, dispatch] = useReducer(gameReducer, initialState);
   const [isMuted, setIsMuted] = useState(false);
   const [isTouchDevice, setIsTouchDevice] = useState(false);
+  const [scale, setScale] = useState(1);
   const gameLoopRef = useRef<number>();
   const lastTimeRef = useRef<number>();
   const keysPressedRef = useRef<Set<string>>(new Set());
+  const gameContainerRef = useRef<HTMLDivElement>(null);
   
+  useLayoutEffect(() => {
+    const container = gameContainerRef.current;
+    if (!container) return;
+
+    const observer = new ResizeObserver(entries => {
+        const entry = entries[0];
+        if (entry) {
+            const width = entry.contentRect.width;
+            setScale(width / GAME_WIDTH);
+        }
+    });
+    
+    observer.observe(container);
+    
+    // Set initial scale
+    const initialWidth = container.clientWidth;
+    if (initialWidth) {
+        setScale(initialWidth / GAME_WIDTH);
+    }
+
+    return () => observer.disconnect();
+  }, []);
+
   useEffect(() => {
     setIsTouchDevice('ontouchstart' in window || navigator.maxTouchPoints > 0);
   }, []);
@@ -181,32 +206,41 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white flex flex-col items-center justify-center p-4 font-mono">
-      <h1 className="text-4xl md:text-6xl font-bold mb-4 text-yellow-300 tracking-wider" style={{ textShadow: '2px 2px 4px #000' }}>Fluffy Dog's Zombie Platformer</h1>
+    <div className="min-h-screen bg-gray-900 text-white flex flex-col items-center justify-center p-2 sm:p-4 font-mono">
+      <h1 className="text-2xl sm:text-4xl md:text-5xl font-bold mb-2 sm:mb-4 text-yellow-300 tracking-wider text-center" style={{ textShadow: '2px 2px 4px #000' }}>Fluffy Dog's Zombie Platformer</h1>
       <div className="w-full max-w-4xl mx-auto">
         <div 
+          ref={gameContainerRef}
           style={{ 
             aspectRatio: `${GAME_WIDTH} / ${GAME_HEIGHT}`,
           }} 
-          className="relative bg-blue-300 border-4 border-yellow-300 rounded-lg shadow-2xl overflow-hidden mx-auto w-full"
+          className="relative bg-blue-300 border-2 sm:border-4 border-yellow-300 rounded-lg shadow-2xl overflow-hidden mx-auto w-full"
         >
-          {gameState.status === GameStatus.Start && <StartScreen onStart={startGame} highScore={gameState.highScore} />}
-          {gameState.status === GameStatus.Playing && <GameScreen gameState={gameState} />}
-          {gameState.status === GameStatus.Paused && <PauseScreen onResume={resumeGame} />}
-          {gameState.status === GameStatus.GameOver && <GameOverScreen score={gameState.score} highScore={gameState.highScore} onRestart={restartGame} />}
+          <div style={{
+            position: 'absolute',
+            width: GAME_WIDTH,
+            height: GAME_HEIGHT,
+            transform: `scale(${scale})`,
+            transformOrigin: 'top left'
+          }}>
+            {gameState.status === GameStatus.Start && <StartScreen onStart={startGame} highScore={gameState.highScore} />}
+            {gameState.status === GameStatus.Playing && <GameScreen gameState={gameState} />}
+            {gameState.status === GameStatus.Paused && <PauseScreen onResume={resumeGame} />}
+            {gameState.status === GameStatus.GameOver && <GameOverScreen score={gameState.score} highScore={gameState.highScore} onRestart={restartGame} />}
+          </div>
           {isTouchDevice && gameState.status === GameStatus.Playing && (
             <MobileControls onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd} />
           )}
         </div>
       </div>
-       <footer className="text-center text-gray-500 mt-4 text-sm w-full max-w-4xl">
-        <p>A/D or Left/Right to Move | W or Up Arrow to Jump | Space to Shoot | P to Pause.</p>
-        <div className="mt-2 flex justify-center items-center space-x-4">
+       <footer className="text-center text-gray-500 mt-2 sm:mt-4 text-xs sm:text-sm w-full max-w-4xl">
+        <p className="hidden sm:block">A/D or Left/Right to Move | W or Up Arrow to Jump | Space to Shoot | P to Pause.</p>
+        <div className="mt-2 flex justify-center items-center space-x-2 sm:space-x-4">
           <span>(C) Noam Gold AI 2025</span>
-          <span>|</span>
-          <a href="mailto:gold.noam@gmail.com" className="text-yellow-400 hover:underline">Send Feedback</a>
-          <button onClick={toggleMute} className="px-3 py-1 bg-yellow-400 text-gray-900 rounded-md font-semibold hover:bg-yellow-300">
-            {isMuted ? '🔇 Sound OFF' : '🔊 Sound ON'}
+          <span className="hidden sm:inline">|</span>
+          <a href="mailto:gold.noam@gmail.com" className="text-yellow-400 hover:underline">Feedback</a>
+          <button onClick={toggleMute} className="px-2 py-1 sm:px-3 bg-yellow-400 text-gray-900 rounded-md font-semibold hover:bg-yellow-300">
+            {isMuted ? '🔇' : '🔊'}
           </button>
         </div>
       </footer>
