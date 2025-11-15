@@ -1,5 +1,5 @@
 
-import { GameState, GameAction, GameStatus, GameObject, Boss, ZombieType } from './types';
+import { GameState, GameAction, GameStatus, GameObject, Boss, ZombieType, PowerUpType } from './types';
 import {
   GAME_WIDTH,
   GAME_HEIGHT,
@@ -26,6 +26,16 @@ import {
   BOSS_PROJECTILE_SPEED,
   BOSS_PROJECTILE_WIDTH,
   BOSS_PROJECTILE_HEIGHT,
+  POWERUP_WIDTH,
+  POWERUP_HEIGHT,
+  POWERUP_DROP_CHANCE,
+  POWERUP_DURATION,
+  SPEED_BOOST_MULTIPLIER,
+  SHOOTER_ENEMY_RANGE,
+  SHOOTER_ENEMY_COOLDOWN,
+  ENEMY_PROJECTILE_WIDTH,
+  ENEMY_PROJECTILE_HEIGHT,
+  ENEMY_PROJECTILE_SPEED,
 } from './constants';
 import { audioService } from './services/audioService';
 import { addHighScore, getHighScores } from './services/scoreManager';
@@ -43,23 +53,26 @@ const checkCollision = (obj1: GameObject, obj2: GameObject): boolean => {
 
 const getRandomZombieType = (level: number): ZombieType => {
   const rand = Math.random();
-  if (level >= 7) {
-    if (rand < 0.2) return ZombieType.Tank;
-    if (rand < 0.4) return ZombieType.Zigzag;
-    if (rand < 0.7) return ZombieType.Fast;
-    return ZombieType.Regular;
+  if (level >= 6) {
+    if (rand < 0.2) return ZombieType.Shooter;
+    if (rand < 0.35) return ZombieType.Tank;
+    if (rand < 0.55) return ZombieType.Flying;
+    if (rand < 0.8) return ZombieType.Zigzag;
+    return ZombieType.Fast;
   }
-  if (level >= 5) {
-    if (rand < 0.2) return ZombieType.Zigzag;
-    if (rand < 0.5) return ZombieType.Fast;
+  if (level >= 4) {
+    if (rand < 0.25) return ZombieType.Flying;
+    if (rand < 0.5) return ZombieType.Zigzag;
+    if (rand < 0.75) return ZombieType.Fast;
     return ZombieType.Regular;
   }
   if (level >= 3) {
-    if (rand < 0.3) return ZombieType.Fast;
+    if (rand < 0.4) return ZombieType.Fast;
     return ZombieType.Regular;
   }
   return ZombieType.Regular;
 };
+
 
 export const gameReducer = (state: GameState, action: GameAction): GameState => {
   switch (action.type) {
@@ -69,8 +82,12 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
         status: GameStatus.Playing,
         nextEnemyId: 1,
         nextProjectileId: 1,
+        nextPowerUpId: 1,
         enemySpawnTimer: ENEMY_SPAWN_RATE_INITIAL,
         shootCooldown: 0,
+        powerUps: [],
+        enemyProjectiles: [],
+        activePowerUp: null,
       };
 
     case 'RESTART_GAME':
@@ -85,6 +102,7 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
     case 'JUMP': {
         if (state.player.isGrounded) {
             const newPlayer = { ...state.player, vy: -PLAYER_JUMP_STRENGTH, isGrounded: false };
+            audioService.playJumpSound();
             return { ...state, player: newPlayer };
         }
         return state;
@@ -101,9 +119,20 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
         enemies: [...state.enemies],
         projectiles: [...state.projectiles],
         bossProjectiles: [...state.bossProjectiles],
+        powerUps: [...state.powerUps],
+        enemyProjectiles: [...state.enemyProjectiles],
         boss: state.boss ? { ...state.boss } : null,
+        activePowerUp: state.activePowerUp ? {...state.activePowerUp} : null,
       };
       
+      // Update cooldowns and timers
+      if (newState.activePowerUp) {
+        newState.activePowerUp.timeLeft -= deltaTime;
+        if (newState.activePowerUp.timeLeft <= 0) {
+            newState.activePowerUp = null;
+        }
+      }
+
       newState.shootCooldown = Math.max(0, state.shootCooldown - deltaTime);
       if (!newState.isBossLevel) {
           newState.enemySpawnTimer = Math.max(0, state.enemySpawnTimer - deltaTime);
@@ -117,7 +146,7 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
             audioService.playLevelUpSound();
             return { ...newState, lives: newLives, status: GameStatus.Playing, isBossLevel: false, boss: null, timeLeft: LEVEL_DURATION, level: newState.level + 1 };
         } else if (!newState.isBossLevel) {
-            return { ...newState, status: GameStatus.Playing, isBossLevel: true, enemies: [], projectiles: [], bossProjectiles: [], timeLeft: LEVEL_DURATION };
+            return { ...newState, status: GameStatus.Playing, isBossLevel: true, enemies: [], projectiles: [], bossProjectiles: [], timeLeft: LEVEL_DURATION, enemyProjectiles: [], powerUps: [] };
         }
       }
 
@@ -126,7 +155,10 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
       if (keysPressed.has('ArrowLeft') || keysPressed.has('KeyA')) dx -= 1;
       if (keysPressed.has('ArrowRight') || keysPressed.has('KeyD')) dx += 1;
       
-      newState.player.vx = dx * PLAYER_SPEED;
+      const isSpeedBoosted = newState.activePowerUp?.type === PowerUpType.SpeedBoost;
+      const currentSpeed = isSpeedBoosted ? PLAYER_SPEED * SPEED_BOOST_MULTIPLIER : PLAYER_SPEED;
+      newState.player.vx = dx * currentSpeed;
+
       newState.player.x += newState.player.vx * deltaTime;
 
       if (dx !== 0) {
@@ -156,6 +188,26 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
       newState.bossProjectiles = newState.bossProjectiles
         .map(p => ({ ...p, x: p.x + p.vx * deltaTime }))
         .filter(p => p.x < GAME_WIDTH && p.x > -p.width);
+
+      newState.enemyProjectiles = newState.enemyProjectiles
+        .map(p => ({ ...p, x: p.x + p.vx * deltaTime }))
+        .filter(p => p.x < GAME_WIDTH && p.x > -p.width);
+
+      // Move power-ups
+      newState.powerUps = newState.powerUps.map(p => {
+          const newP = { ...p };
+          if (!newP.isGrounded) {
+              newP.vy += GRAVITY * deltaTime;
+              newP.y += newP.vy * deltaTime;
+              const powerUpGroundY = GAME_HEIGHT - newP.height;
+              if (newP.y >= powerUpGroundY) {
+                  newP.y = powerUpGroundY;
+                  newP.vy = 0;
+                  newP.isGrounded = true;
+              }
+          }
+          return newP;
+      }).filter(p => p.y < GAME_HEIGHT);
 
       if (newState.isBossLevel) {
         if (!newState.boss) {
@@ -198,7 +250,7 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
                 audioService.playBossShootSound();
                 const projectileVx = Math.sign(distance) * BOSS_PROJECTILE_SPEED;
                 const newBossProjectile: GameObject = {
-                    id: newState.nextProjectileId,
+                    id: newState.nextProjectileId++,
                     x: bossCenter - BOSS_PROJECTILE_WIDTH / 2,
                     y: newState.boss.y + newState.boss.height / 2 - BOSS_PROJECTILE_HEIGHT / 2,
                     width: BOSS_PROJECTILE_WIDTH,
@@ -207,14 +259,12 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
                     vy: 0,
                     type: 'boss_projectile',
                 };
-                newState.nextProjectileId++;
                 newState.bossProjectiles.push(newBossProjectile);
                 const shootCooldown = Math.max(0.5, BOSS_SHOOT_COOLDOWN_INITIAL - (newState.level - 1) * 0.1);
                 newState.bossShootCooldown = shootCooldown;
             }
         }
       } else {
-         // Spawn and move enemies
         if (newState.enemySpawnTimer <= 0) {
             const spawnFromRight = Math.random() > 0.5;
             const zombieType = getRandomZombieType(newState.level);
@@ -223,7 +273,7 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
             const enemySpeed = baseSpeed * config.speedMultiplier;
 
             const newEnemy: GameObject = {
-                id: newState.nextEnemyId,
+                id: newState.nextEnemyId++,
                 x: spawnFromRight ? GAME_WIDTH : -ENEMY_WIDTH,
                 y: GAME_HEIGHT - ENEMY_HEIGHT,
                 width: ENEMY_WIDTH,
@@ -239,7 +289,15 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
                 baseY: GAME_HEIGHT - ENEMY_HEIGHT,
                 age: 0,
             };
-            newState.nextEnemyId++;
+
+            if (zombieType === ZombieType.Flying) {
+                newEnemy.y = 50 + Math.random() * (GAME_HEIGHT / 2.5 - ENEMY_HEIGHT);
+                newEnemy.isGrounded = false;
+            }
+            if (zombieType === ZombieType.Shooter) {
+                newEnemy.enemyShootCooldown = SHOOTER_ENEMY_COOLDOWN * (0.8 + Math.random() * 0.4);
+            }
+
             newState.enemies.push(newEnemy);
             const spawnRateFactor = Math.max(0.15, ENEMY_SPAWN_RATE_INITIAL - newState.level * 0.15);
             newState.enemySpawnTimer = spawnRateFactor * (0.8 + Math.random() * 0.4);
@@ -248,8 +306,39 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
         newState.enemies = newState.enemies
           .map(e => {
             const updatedE = { ...e };
-            updatedE.age = (e.age || 0) + deltaTime;
-            updatedE.x += e.vx * deltaTime;
+            updatedE.age = (updatedE.age || 0) + deltaTime;
+
+            if (updatedE.zombieType === ZombieType.Shooter) {
+                const distanceToPlayer = updatedE.x - newState.player.x;
+                const facingPlayer = (distanceToPlayer < 0 && updatedE.direction === 'right') || (distanceToPlayer > 0 && updatedE.direction === 'left');
+                
+                if (Math.abs(distanceToPlayer) < SHOOTER_ENEMY_RANGE && facingPlayer) {
+                    updatedE.vx = 0;
+                    updatedE.enemyShootCooldown = Math.max(0, (updatedE.enemyShootCooldown || 0) - deltaTime);
+                    if (updatedE.enemyShootCooldown <= 0) {
+                        audioService.playEnemyShootSound();
+                        const projectileDirection = updatedE.direction === 'right' ? 1 : -1;
+                        newState.enemyProjectiles.push({
+                            id: newState.nextProjectileId++,
+                            x: updatedE.x + (projectileDirection === 1 ? updatedE.width : -ENEMY_PROJECTILE_WIDTH),
+                            y: updatedE.y + updatedE.height / 2 - ENEMY_PROJECTILE_HEIGHT / 2,
+                            width: ENEMY_PROJECTILE_WIDTH,
+                            height: ENEMY_PROJECTILE_HEIGHT,
+                            vx: projectileDirection * ENEMY_PROJECTILE_SPEED,
+                            vy: 0,
+                            type: 'enemy_projectile',
+                        });
+                        updatedE.enemyShootCooldown = SHOOTER_ENEMY_COOLDOWN;
+                    }
+                } else {
+                    const config = ZOMBIE_TYPE_CONFIGS[updatedE.zombieType!];
+                    const baseSpeed = (100 + newState.level * 40);
+                    const enemySpeed = baseSpeed * config.speedMultiplier;
+                    updatedE.vx = updatedE.direction === 'right' ? enemySpeed : -enemySpeed;
+                }
+            }
+            
+            updatedE.x += updatedE.vx * deltaTime;
 
             if (e.zombieType === ZombieType.Zigzag) {
               updatedE.y = e.baseY! + Math.sin(updatedE.age * ZIGZAG_FREQUENCY) * ZIGZAG_AMPLITUDE;
@@ -290,12 +379,13 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
       } else {
         const usedProjectileIds = new Set<number>();
         const enemiesThisFrame = [...newState.enemies];
+        let deadEnemies: GameObject[] = [];
 
         for (const p of newState.projectiles) {
             if (usedProjectileIds.has(p.id)) continue;
     
             for (const e of enemiesThisFrame) {
-                if (e.health! <= 0) continue; // Skip dead enemies
+                if (e.health! <= 0) continue;
     
                 if (checkCollision(p, e)) {
                     e.health! -= 1;
@@ -303,50 +393,103 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
                     audioService.playHitSound();
                     
                     if (e.health! <= 0) {
+                        deadEnemies.push(e);
                         const config = ZOMBIE_TYPE_CONFIGS[e.zombieType!];
                         newState.score += config.score;
                     }
-                    
-                    break; // Projectile is used up
+                    break;
                 }
             }
         }
         
+        deadEnemies.forEach(e => {
+            if (Math.random() < POWERUP_DROP_CHANCE) {
+                const powerUpType = Math.random() < 0.5 ? PowerUpType.SpeedBoost : PowerUpType.Invincibility;
+                newState.powerUps.push({
+                    id: newState.nextPowerUpId++,
+                    x: e.x + e.width / 2 - POWERUP_WIDTH / 2,
+                    y: e.y,
+                    width: POWERUP_WIDTH,
+                    height: POWERUP_HEIGHT,
+                    vx: 0,
+                    vy: 0,
+                    type: 'power_up',
+                    powerUpType: powerUpType,
+                    isGrounded: false,
+                });
+            }
+        });
+
         newState.enemies = enemiesThisFrame.filter(e => e.health! > 0);
         newState.projectiles = newState.projectiles.filter(p => !usedProjectileIds.has(p.id));
       }
 
       let playerHit = false;
-      if (newState.isBossLevel && newState.boss) {
-          if (checkCollision(newState.player, newState.boss)) playerHit = true;
-      } else {
-        for (const e of newState.enemies) {
-            if (checkCollision(newState.player, e)) {
-                playerHit = true;
-                newState.enemies = newState.enemies.filter(en => en.id !== e.id);
-                break; 
-            }
-        }
-      }
+      const isInvincible = newState.activePowerUp?.type === PowerUpType.Invincibility;
 
-      const hitBossProjectiles = new Set<number>();
+      if (!isInvincible) {
+        if (newState.isBossLevel && newState.boss) {
+            if (checkCollision(newState.player, newState.boss)) playerHit = true;
+        } else {
+          for (const e of newState.enemies) {
+              if (checkCollision(newState.player, e)) {
+                  playerHit = true;
+                  newState.enemies = newState.enemies.filter(en => en.id !== e.id);
+                  break; 
+              }
+          }
+        }
+
+        const hitBossProjectiles = new Set<number>();
         for (const p of newState.bossProjectiles) {
             if(checkCollision(newState.player, p)) {
                 playerHit = true;
                 hitBossProjectiles.add(p.id);
-                break; // one hit is enough
+                break;
             }
         }
-
         if (hitBossProjectiles.size > 0) {
             newState.bossProjectiles = newState.bossProjectiles.filter(p => !hitBossProjectiles.has(p.id));
         }
+
+        const hitEnemyProjectiles = new Set<number>();
+        for (const p of newState.enemyProjectiles) {
+            if(checkCollision(newState.player, p)) {
+                playerHit = true;
+                hitEnemyProjectiles.add(p.id);
+                break;
+            }
+        }
+        if (hitEnemyProjectiles.size > 0) {
+            newState.enemyProjectiles = newState.enemyProjectiles.filter(p => !hitEnemyProjectiles.has(p.id));
+        }
+      }
+
+      const collectedPowerUpIds = new Set<number>();
+        for (const p of newState.powerUps) {
+            if (checkCollision(newState.player, p)) {
+                collectedPowerUpIds.add(p.id);
+                audioService.playPowerUpCollectSound();
+                newState.activePowerUp = {
+                    type: p.powerUpType!,
+                    timeLeft: POWERUP_DURATION,
+                };
+            }
+        }
+      if (collectedPowerUpIds.size > 0) {
+        newState.powerUps = newState.powerUps.filter(p => !collectedPowerUpIds.has(p.id));
+      }
+
 
       if (playerHit) {
           newState.lives -= 1;
           audioService.playPlayerHitSound();
           if (newState.lives <= 0) {
-              return gameReducer(newState, { type: 'GAME_OVER' });
+              if (state.canContinue) {
+                  return { ...newState, status: GameStatus.Continue };
+              } else {
+                  return gameReducer(newState, { type: 'GAME_OVER' });
+              }
           }
       }
       
@@ -378,6 +521,31 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
         projectiles: [...state.projectiles, newProjectile],
         nextProjectileId: state.nextProjectileId + 1,
         shootCooldown: Math.max(0.08, PLAYER_SHOOT_COOLDOWN - state.level * 0.015),
+      };
+    }
+
+    case 'CONTINUE_GAME': {
+      return {
+        ...state,
+        status: GameStatus.Playing,
+        lives: 3,
+        canContinue: false,
+        timeLeft: LEVEL_DURATION,
+        enemies: [],
+        projectiles: [],
+        bossProjectiles: [],
+        enemyProjectiles: [],
+        powerUps: [],
+        activePowerUp: null,
+        boss: null, // Reset the boss if it's a boss level
+        player: { 
+          ...state.player, 
+          x: GAME_WIDTH / 2 - state.player.width / 2,
+          y: GAME_HEIGHT - state.player.height, 
+          vx: 0, 
+          vy: 0, 
+          isGrounded: true 
+        },
       };
     }
     

@@ -4,15 +4,23 @@ export enum GameStatus {
   Playing,
   Paused,
   GameOver,
+  Continue,
 }
 
-export type GameObjectType = 'player' | 'enemy' | 'projectile' | 'boss' | 'boss_projectile';
+export type GameObjectType = 'player' | 'enemy' | 'projectile' | 'boss' | 'boss_projectile' | 'power_up' | 'enemy_projectile';
 
 export enum ZombieType {
   Regular = 'REGULAR',
   Fast = 'FAST',
   Tank = 'TANK',
   Zigzag = 'ZIGZAG',
+  Flying = 'FLYING',
+  Shooter = 'SHOOTER',
+}
+
+export enum PowerUpType {
+  SpeedBoost = 'SPEED_BOOST',
+  Invincibility = 'INVINCIBILITY',
 }
 
 export interface HighScoreEntry {
@@ -36,11 +44,18 @@ export interface GameObject {
   maxHealth?: number;
   baseY?: number;
   age?: number;
+  enemyShootCooldown?: number; // for shooter enemies
+  powerUpType?: PowerUpType;
 }
 
 export interface Boss extends GameObject {
   health: number;
   maxHealth: number;
+}
+
+export interface ActivePowerUp {
+    type: PowerUpType;
+    timeLeft: number;
 }
 
 export interface GameState {
@@ -57,11 +72,16 @@ export interface GameState {
   projectiles: GameObject[];
   boss: Boss | null;
   bossProjectiles: GameObject[];
+  powerUps: GameObject[];
+  enemyProjectiles: GameObject[];
+  activePowerUp: ActivePowerUp | null;
   shootCooldown: number;
   bossShootCooldown: number;
   nextEnemyId: number;
   nextProjectileId: number;
+  nextPowerUpId: number;
   enemySpawnTimer: number;
+  canContinue: boolean;
 }
 
 export type GameAction =
@@ -69,6 +89,7 @@ export type GameAction =
   | { type: 'RESTART_GAME'; payload: GameState }
   | { type: 'PAUSE_GAME' }
   | { type: 'RESUME_GAME' }
+  | { type: 'CONTINUE_GAME' }
   | { type: 'UPDATE'; payload: { deltaTime: number, keysPressed: Set<string> } }
   | { type: 'SHOOT' }
   | { type: 'JUMP' }

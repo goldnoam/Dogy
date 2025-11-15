@@ -1,3 +1,4 @@
+
 class AudioService {
   private audioContext: AudioContext | null = null;
   public isMuted: boolean = false;
@@ -62,6 +63,18 @@ class AudioService {
 
   public playLevelUpSound() {
     this.playSound('sine', 659.25, 0.3, 0.5); // E5
+  }
+
+  public playJumpSound() {
+    this.playSound('sine', 440.00, 0.1, 0.3); // A4
+  }
+  
+  public playPowerUpCollectSound() {
+    this.playSound('sine', 880.00, 0.2, 0.6); // A5
+  }
+
+  public playEnemyShootSound() {
+    this.playSound('square', 329.63, 0.1, 0.3); // E4
   }
 }
 

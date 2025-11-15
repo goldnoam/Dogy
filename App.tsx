@@ -4,6 +4,7 @@ import { GameScreen } from './components/GameScreen';
 import { StartScreen } from './components/StartScreen';
 import { GameOverScreen } from './components/GameOverScreen';
 import { PauseScreen } from './components/PauseScreen';
+import { ContinueScreen } from './components/ContinueScreen';
 import { MobileControls } from './components/MobileControls';
 import { GameState, GameObject, GameStatus } from './types';
 import { gameReducer } from './gameReducer';
@@ -50,11 +51,16 @@ const App: React.FC = () => {
     projectiles: [],
     boss: null,
     bossProjectiles: [],
+    powerUps: [],
+    enemyProjectiles: [],
+    activePowerUp: null,
     shootCooldown: 0,
     bossShootCooldown: 0,
     nextEnemyId: 1,
     nextProjectileId: 1,
+    nextPowerUpId: 1,
     enemySpawnTimer: ENEMY_SPAWN_RATE_INITIAL,
+    canContinue: true,
   };
 
   const [gameState, dispatch] = useReducer(gameReducer, initialState);
@@ -160,6 +166,14 @@ const App: React.FC = () => {
     dispatch({ type: 'RESUME_GAME' });
   };
 
+  const continueGame = () => {
+    dispatch({ type: 'CONTINUE_GAME' });
+  };
+  
+  const forceGameOver = () => {
+    dispatch({ type: 'GAME_OVER' });
+  };
+
   const gameLoop = useCallback((timestamp: number) => {
     if (!lastTimeRef.current) {
       lastTimeRef.current = timestamp;
@@ -238,6 +252,7 @@ const App: React.FC = () => {
             {gameState.status === GameStatus.Start && <StartScreen onStart={startGame} highScores={gameState.highScores} />}
             {gameState.status === GameStatus.Playing && <GameScreen gameState={gameState} />}
             {gameState.status === GameStatus.Paused && <PauseScreen onResume={resumeGame} />}
+            {gameState.status === GameStatus.Continue && <ContinueScreen score={gameState.score} onContinue={continueGame} onGameOver={forceGameOver} />}
             {gameState.status === GameStatus.GameOver && <GameOverScreen score={gameState.score} highScore={gameState.highScore} onRestart={restartGame} />}
           </div>
           {isTouchDevice && (gameState.status === GameStatus.Playing || gameState.status === GameStatus.Paused) && (

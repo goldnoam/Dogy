@@ -35,6 +35,18 @@ export const LEVEL_DURATION = 15; // seconds
 export const ZIGZAG_AMPLITUDE = 20;
 export const ZIGZAG_FREQUENCY = 5;
 
+export const POWERUP_WIDTH = 40;
+export const POWERUP_HEIGHT = 40;
+export const POWERUP_DURATION = 8; // seconds
+export const POWERUP_DROP_CHANCE = 0.15; // 15% chance
+export const SPEED_BOOST_MULTIPLIER = 1.5;
+
+export const SHOOTER_ENEMY_RANGE = 400;
+export const SHOOTER_ENEMY_COOLDOWN = 2.5; // seconds
+export const ENEMY_PROJECTILE_WIDTH = 25;
+export const ENEMY_PROJECTILE_HEIGHT = 25;
+export const ENEMY_PROJECTILE_SPEED = 300;
+
 export const ZOMBIE_TYPE_CONFIGS = {
   [ZombieType.Regular]: {
     speedMultiplier: 1.0,
@@ -59,5 +71,17 @@ export const ZOMBIE_TYPE_CONFIGS = {
     health: 1,
     score: 200,
     emoji: '🐩',
+  },
+  [ZombieType.Flying]: {
+    speedMultiplier: 1.1,
+    health: 1,
+    score: 250,
+    emoji: '🦇',
+  },
+  [ZombieType.Shooter]: {
+    speedMultiplier: 0.5,
+    health: 2,
+    score: 400,
+    emoji: '💀',
   },
 };
