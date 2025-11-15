@@ -186,10 +186,9 @@ const App: React.FC = () => {
       <div className="w-full max-w-4xl mx-auto">
         <div 
           style={{ 
-            width: GAME_WIDTH, 
-            height: GAME_HEIGHT,
+            aspectRatio: `${GAME_WIDTH} / ${GAME_HEIGHT}`,
           }} 
-          className="relative bg-blue-300 border-4 border-yellow-300 rounded-lg shadow-2xl overflow-hidden mx-auto"
+          className="relative bg-blue-300 border-4 border-yellow-300 rounded-lg shadow-2xl overflow-hidden mx-auto w-full"
         >
           {gameState.status === GameStatus.Start && <StartScreen onStart={startGame} highScore={gameState.highScore} />}
           {gameState.status === GameStatus.Playing && <GameScreen gameState={gameState} />}

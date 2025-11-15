@@ -1,3 +1,4 @@
+
 import { GameState, GameAction, GameStatus, GameObject, Boss, ZombieType } from './types';
 import {
   GAME_WIDTH,
@@ -369,6 +370,7 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
         vx: projectileVx,
         vy: 0,
         type: 'projectile',
+        direction: state.player.direction,
       };
       return {
         ...state,

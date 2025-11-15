@@ -68,7 +68,7 @@ export const GameScreen: React.FC<GameScreenProps> = ({ gameState }) => {
         
         {projectiles.map(p => (
          <GameObject key={p.id} {...p}>
-            <div className="text-4xl drop-shadow-lg">{p.id % 2 === 0 ? '🦴' : '🍪'}</div>
+            <div className="text-4xl drop-shadow-lg" style={{ transform: p.direction === 'left' ? 'scaleX(-1)' : 'scaleX(1)' }}>{p.id % 2 === 0 ? '🦴' : '🍪'}</div>
          </GameObject>
         ))}
 

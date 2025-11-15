@@ -1,3 +1,4 @@
+
 import React from 'react';
 
 interface MobileControlsProps {
@@ -11,8 +12,8 @@ export const MobileControls: React.FC<MobileControlsProps> = ({ onTouchStart, on
     e.preventDefault();
   };
 
-  const dPadButtonClasses = "w-16 h-16 sm:w-20 sm:h-20 bg-gray-800 bg-opacity-60 text-3xl sm:text-4xl text-white flex items-center justify-center select-none active:bg-opacity-80 active:scale-95 transition-transform rounded-md";
-  const actionButtonClasses = "w-20 h-20 sm:w-24 sm:h-24 bg-gray-800 bg-opacity-60 rounded-full text-white flex flex-col items-center justify-center select-none active:bg-opacity-80 active:scale-95 transition-transform";
+  const dPadButtonBaseClasses = "w-full h-full bg-gray-800 bg-opacity-90 text-4xl sm:text-5xl text-white flex items-center justify-center select-none active:bg-gray-700 active:scale-95 transition-transform border-4 border-gray-600 shadow-inner";
+  const actionButtonClasses = "w-24 h-24 sm:w-28 sm:h-28 bg-red-600 bg-opacity-90 rounded-full text-white flex flex-col items-center justify-center select-none active:bg-red-500 active:scale-95 transition-transform border-4 border-red-800 shadow-xl";
 
   return (
     <div 
@@ -21,43 +22,45 @@ export const MobileControls: React.FC<MobileControlsProps> = ({ onTouchStart, on
       onTouchMove={handleContainerTouch} // Prevent scrolling while dragging finger
     >
       {/* D-Pad using Grid for a classic look */}
-      <div className="grid grid-cols-3 grid-rows-3 gap-1 pointer-events-auto w-48 h-48 sm:w-60 sm:h-60">
+      <div className="grid grid-cols-3 grid-rows-3 pointer-events-auto w-52 h-52 sm:w-64 sm:h-64 shadow-2xl">
         {/* Up (Jump) */}
-        <div className="col-start-2 row-start-1 flex justify-center items-center">
+        <div className="col-start-2 row-start-1">
             <button
               onTouchStart={() => onTouchStart('ArrowUp')}
-              className={dPadButtonClasses}
+              className={`${dPadButtonBaseClasses} rounded-t-xl`}
               aria-label="Jump"
             >
               ▲
             </button>
         </div>
         {/* Left */}
-        <div className="col-start-1 row-start-2 flex justify-center items-center">
+        <div className="col-start-1 row-start-2">
             <button
               onTouchStart={() => onTouchStart('ArrowLeft')}
               onTouchEnd={() => onTouchEnd('ArrowLeft')}
-              className={dPadButtonClasses}
+              className={`${dPadButtonBaseClasses} rounded-l-xl`}
               aria-label="Move Left"
             >
               ◀
             </button>
         </div>
+        {/* Center */}
+        <div className="col-start-2 row-start-2 bg-gray-800 bg-opacity-90 border-y-4 border-x-4 border-gray-600 shadow-inner"></div>
         {/* Right */}
-        <div className="col-start-3 row-start-2 flex justify-center items-center">
+        <div className="col-start-3 row-start-2">
             <button
               onTouchStart={() => onTouchStart('ArrowRight')}
               onTouchEnd={() => onTouchEnd('ArrowRight')}
-              className={dPadButtonClasses}
+              className={`${dPadButtonBaseClasses} rounded-r-xl`}
               aria-label="Move Right"
             >
               ▶
             </button>
         </div>
         {/* Down (inactive) */}
-        <div className="col-start-2 row-start-3 flex justify-center items-center">
+        <div className="col-start-2 row-start-3">
             <button
-              className={`${dPadButtonClasses} opacity-50 cursor-not-allowed`}
+              className={`${dPadButtonBaseClasses} rounded-b-xl opacity-60 cursor-not-allowed`}
               aria-label="Down (no action)"
             >
               ▼
@@ -73,16 +76,16 @@ export const MobileControls: React.FC<MobileControlsProps> = ({ onTouchStart, on
           className={actionButtonClasses}
           aria-label="Shoot"
         >
-            <span className="text-3xl sm:text-4xl font-bold">B</span>
-            <span className="text-xs tracking-wider">SHOOT</span>
+            <span className="text-4xl sm:text-5xl font-bold">B</span>
+            <span className="text-sm tracking-wider">SHOOT</span>
         </button>
         <button
           onTouchStart={() => onTouchStart('ArrowUp')}
           className={actionButtonClasses}
           aria-label="Jump"
         >
-          <span className="text-3xl sm:text-4xl font-bold">A</span>
-          <span className="text-xs tracking-wider">JUMP</span>
+          <span className="text-4xl sm:text-5xl font-bold">A</span>
+          <span className="text-sm tracking-wider">JUMP</span>
         </button>
       </div>
     </div>
