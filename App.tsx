@@ -4,6 +4,7 @@ import { GameScreen } from './components/GameScreen';
 import { StartScreen } from './components/StartScreen';
 import { GameOverScreen } from './components/GameOverScreen';
 import { PauseScreen } from './components/PauseScreen';
+import { MobileControls } from './components/MobileControls';
 import { GameState, GameObject, GameStatus } from './types';
 import { gameReducer } from './gameReducer';
 import { 
@@ -54,9 +55,14 @@ const App: React.FC = () => {
 
   const [gameState, dispatch] = useReducer(gameReducer, initialState);
   const [isMuted, setIsMuted] = useState(false);
+  const [isTouchDevice, setIsTouchDevice] = useState(false);
   const gameLoopRef = useRef<number>();
   const lastTimeRef = useRef<number>();
   const keysPressedRef = useRef<Set<string>>(new Set());
+  
+  useEffect(() => {
+    setIsTouchDevice('ontouchstart' in window || navigator.maxTouchPoints > 0);
+  }, []);
 
   useEffect(() => {
     audioService.setMuted(isMuted);
@@ -73,6 +79,11 @@ const App: React.FC = () => {
       } else if (gameState.status === GameStatus.Paused) {
         dispatch({ type: 'RESUME_GAME' });
       }
+      return;
+    }
+
+    if (e.code === 'Space' && gameState.status === GameStatus.Paused) {
+      dispatch({ type: 'RESUME_GAME' });
       return;
     }
     
@@ -149,6 +160,25 @@ const App: React.FC = () => {
       }
     };
   }, [gameState.status, gameLoop]);
+  
+  const handleTouchStart = (keyCode: string) => {
+    // For single-press actions like jump and shoot
+    if (keyCode === 'Space') {
+      dispatch({ type: 'SHOOT' });
+    } else if (keyCode === 'ArrowUp') {
+      dispatch({ type: 'JUMP' });
+    } else {
+      // For continuous-press actions like movement
+      keysPressedRef.current.add(keyCode);
+    }
+  };
+
+  const handleTouchEnd = (keyCode: string) => {
+    // We only need to handle the release for movement keys
+    if (keyCode === 'ArrowLeft' || keyCode === 'ArrowRight') {
+      keysPressedRef.current.delete(keyCode);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-900 text-white flex flex-col items-center justify-center p-4 font-mono">
@@ -165,6 +195,9 @@ const App: React.FC = () => {
           {gameState.status === GameStatus.Playing && <GameScreen gameState={gameState} />}
           {gameState.status === GameStatus.Paused && <PauseScreen onResume={resumeGame} />}
           {gameState.status === GameStatus.GameOver && <GameOverScreen score={gameState.score} highScore={gameState.highScore} onRestart={restartGame} />}
+          {isTouchDevice && gameState.status === GameStatus.Playing && (
+            <MobileControls onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd} />
+          )}
         </div>
       </div>
        <footer className="text-center text-gray-500 mt-4 text-sm w-full max-w-4xl">

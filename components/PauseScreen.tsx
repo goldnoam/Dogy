@@ -15,6 +15,7 @@ export const PauseScreen: React.FC<PauseScreenProps> = ({ onResume }) => {
       >
         Resume
       </button>
+      <p className="mt-4 text-gray-300 text-lg">You can also press 'Space' to resume.</p>
     </div>
   );
 };
