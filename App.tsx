@@ -187,11 +187,15 @@ const App: React.FC = () => {
   }, [gameState.status, gameLoop]);
   
   const handleTouchStart = (keyCode: string) => {
-    // For single-press actions like jump and shoot
+    // For single-press actions
     if (keyCode === 'Space') {
       dispatch({ type: 'SHOOT' });
     } else if (keyCode === 'ArrowUp') {
       dispatch({ type: 'JUMP' });
+    } else if (keyCode === 'Pause') {
+      if (gameState.status === GameStatus.Playing) {
+        dispatch({ type: 'PAUSE_GAME' });
+      }
     } else {
       // For continuous-press actions like movement
       keysPressedRef.current.add(keyCode);
