@@ -13,11 +13,11 @@ export const MobileControls: React.FC<MobileControlsProps> = ({ onTouchStart, on
   };
 
   const dPadButtonBaseClasses = "w-full h-full bg-gray-800 bg-opacity-80 text-3xl sm:text-5xl text-white flex items-center justify-center select-none active:bg-gray-700 active:scale-95 transition-transform border-2 sm:border-4 border-gray-600 shadow-inner";
-  const actionButtonClasses = "w-20 h-20 sm:w-24 sm:h-28 bg-red-600 bg-opacity-80 rounded-full text-white flex flex-col items-center justify-center select-none active:bg-red-500 active:scale-95 transition-transform border-2 sm:border-4 border-red-800 shadow-xl";
+  const actionButtonClasses = "w-24 h-24 sm:w-28 sm:h-28 bg-red-600 bg-opacity-80 rounded-full text-white flex flex-col items-center justify-center select-none active:bg-red-500 active:scale-95 transition-transform border-2 sm:border-4 border-red-800 shadow-xl";
 
   return (
     <div 
-      className="absolute bottom-0 left-0 w-full h-auto p-2 sm:p-6 flex justify-between items-end z-30 pointer-events-none"
+      className="w-full h-auto mt-2 p-2 sm:p-4 flex justify-between items-center"
       onTouchStart={handleContainerTouch}
       onTouchMove={handleContainerTouch} // Prevent scrolling while dragging finger
     >

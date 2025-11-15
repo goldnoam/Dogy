@@ -228,10 +228,10 @@ const App: React.FC = () => {
             {gameState.status === GameStatus.Paused && <PauseScreen onResume={resumeGame} />}
             {gameState.status === GameStatus.GameOver && <GameOverScreen score={gameState.score} highScore={gameState.highScore} onRestart={restartGame} />}
           </div>
-          {isTouchDevice && gameState.status === GameStatus.Playing && (
-            <MobileControls onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd} />
-          )}
         </div>
+        {isTouchDevice && gameState.status === GameStatus.Playing && (
+          <MobileControls onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd} />
+        )}
       </div>
        <footer className="text-center text-gray-500 mt-2 sm:mt-4 text-xs sm:text-sm w-full max-w-4xl">
         <p className="hidden sm:block">A/D or Left/Right to Move | W or Up Arrow to Jump | Space to Shoot | P to Pause.</p>
