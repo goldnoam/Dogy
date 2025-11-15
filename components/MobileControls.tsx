@@ -1,14 +1,12 @@
 
 import React from 'react';
-import { GameStatus } from '../types';
 
 interface MobileControlsProps {
   onTouchStart: (keyCode: string) => void;
   onTouchEnd: (keyCode: string) => void;
-  gameStatus: GameStatus;
 }
 
-export const MobileControls: React.FC<MobileControlsProps> = ({ onTouchStart, onTouchEnd, gameStatus }) => {
+export const MobileControls: React.FC<MobileControlsProps> = ({ onTouchStart, onTouchEnd }) => {
   // Prevents default touch behaviors like scrolling or zooming
   const handleContainerTouch = (e: React.TouchEvent) => {
     e.preventDefault();
@@ -16,7 +14,6 @@ export const MobileControls: React.FC<MobileControlsProps> = ({ onTouchStart, on
 
   const dPadButtonBaseClasses = "w-full h-full bg-gray-800 bg-opacity-80 text-3xl sm:text-5xl text-white flex items-center justify-center select-none active:bg-gray-700 active:scale-95 transition-transform border-2 sm:border-4 border-gray-600 shadow-inner";
   const actionButtonClasses = "w-20 h-20 sm:w-24 sm:h-24 bg-red-600 bg-opacity-80 rounded-full text-white flex flex-col items-center justify-center select-none active:bg-red-500 active:scale-95 transition-transform border-2 sm:border-4 border-red-800 shadow-xl";
-  const pauseButtonClasses = "w-16 h-16 sm:w-20 sm:h-20 bg-blue-600 bg-opacity-80 rounded-full text-white flex items-center justify-center select-none active:bg-blue-500 active:scale-95 transition-transform border-2 sm:border-4 border-blue-800 shadow-xl font-bold text-xl sm:text-2xl";
 
   return (
     <div 
@@ -64,17 +61,6 @@ export const MobileControls: React.FC<MobileControlsProps> = ({ onTouchStart, on
         <div className="col-start-2 row-start-3 bg-gray-800 bg-opacity-80 rounded-b-xl border-2 sm:border-4 border-gray-600 border-t-0"></div>
       </div>
       
-      {/* Pause Button */}
-      <div className="flex items-center justify-center">
-        <button
-          onTouchStart={() => onTouchStart('Pause')}
-          className={pauseButtonClasses}
-          aria-label={gameStatus === GameStatus.Paused ? 'Resume' : 'Pause'}
-        >
-          {gameStatus === GameStatus.Paused ? '▶️' : 'P'}
-        </button>
-      </div>
-
       {/* Action Buttons (A/B) */}
       <div className="flex items-center space-x-3 sm:space-x-5 pointer-events-auto">
         <button

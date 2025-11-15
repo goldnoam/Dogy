@@ -240,9 +240,18 @@ const App: React.FC = () => {
             {gameState.status === GameStatus.Paused && <PauseScreen onResume={resumeGame} />}
             {gameState.status === GameStatus.GameOver && <GameOverScreen score={gameState.score} highScore={gameState.highScore} onRestart={restartGame} />}
           </div>
+          {isTouchDevice && (gameState.status === GameStatus.Playing || gameState.status === GameStatus.Paused) && (
+            <button
+              onTouchStart={() => handleTouchStart('Pause')}
+              className="absolute top-4 right-4 z-30 w-12 h-12 bg-blue-600 bg-opacity-80 rounded-full text-white flex items-center justify-center select-none active:bg-blue-500 active:scale-95 transition-transform border-2 border-blue-800 shadow-xl font-bold text-2xl"
+              aria-label={gameState.status === GameStatus.Paused ? 'Resume' : 'Pause'}
+            >
+              {gameState.status === GameStatus.Paused ? '▶️' : '⏸️'}
+            </button>
+          )}
         </div>
         {isTouchDevice && (gameState.status === GameStatus.Playing || gameState.status === GameStatus.Paused) && (
-          <MobileControls onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd} gameStatus={gameState.status} />
+          <MobileControls onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd} />
         )}
       </div>
        <footer className="text-center text-gray-500 mt-2 sm:mt-4 text-xs sm:text-sm w-full max-w-4xl">
