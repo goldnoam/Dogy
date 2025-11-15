@@ -1,12 +1,14 @@
 
 import React from 'react';
+import { GameStatus } from '../types';
 
 interface MobileControlsProps {
   onTouchStart: (keyCode: string) => void;
   onTouchEnd: (keyCode: string) => void;
+  gameStatus: GameStatus;
 }
 
-export const MobileControls: React.FC<MobileControlsProps> = ({ onTouchStart, onTouchEnd }) => {
+export const MobileControls: React.FC<MobileControlsProps> = ({ onTouchStart, onTouchEnd, gameStatus }) => {
   // Prevents default touch behaviors like scrolling or zooming
   const handleContainerTouch = (e: React.TouchEvent) => {
     e.preventDefault();
@@ -14,7 +16,7 @@ export const MobileControls: React.FC<MobileControlsProps> = ({ onTouchStart, on
 
   const dPadButtonBaseClasses = "w-full h-full bg-gray-800 bg-opacity-80 text-3xl sm:text-5xl text-white flex items-center justify-center select-none active:bg-gray-700 active:scale-95 transition-transform border-2 sm:border-4 border-gray-600 shadow-inner";
   const actionButtonClasses = "w-20 h-20 sm:w-24 sm:h-24 bg-red-600 bg-opacity-80 rounded-full text-white flex flex-col items-center justify-center select-none active:bg-red-500 active:scale-95 transition-transform border-2 sm:border-4 border-red-800 shadow-xl";
-  const pauseButtonClasses = "px-4 py-2 bg-gray-600 bg-opacity-80 rounded-lg text-white font-semibold select-none active:bg-gray-500 border-2 sm:border-4 border-gray-500 shadow-lg text-sm sm:text-base";
+  const pauseButtonClasses = "w-16 h-16 sm:w-20 sm:h-20 bg-blue-600 bg-opacity-80 rounded-full text-white flex items-center justify-center select-none active:bg-blue-500 active:scale-95 transition-transform border-2 sm:border-4 border-blue-800 shadow-xl font-bold text-xl sm:text-2xl";
 
   return (
     <div 
@@ -46,4 +48,52 @@ export const MobileControls: React.FC<MobileControlsProps> = ({ onTouchStart, on
             </button>
         </div>
         {/* Center */}
-        
+        <div className="col-start-2 row-start-2 bg-gray-800 bg-opacity-80 border-x-2 sm:border-x-4 border-gray-600"></div>
+        {/* Right */}
+        <div className="col-start-3 row-start-2">
+            <button
+              onTouchStart={() => onTouchStart('ArrowRight')}
+              onTouchEnd={() => onTouchEnd('ArrowRight')}
+              className={`${dPadButtonBaseClasses} rounded-r-xl`}
+              aria-label="Move Right"
+            >
+              ▶
+            </button>
+        </div>
+        {/* Down (not used) */}
+        <div className="col-start-2 row-start-3 bg-gray-800 bg-opacity-80 rounded-b-xl border-2 sm:border-4 border-gray-600 border-t-0"></div>
+      </div>
+      
+      {/* Pause Button */}
+      <div className="flex items-center justify-center">
+        <button
+          onTouchStart={() => onTouchStart('Pause')}
+          className={pauseButtonClasses}
+          aria-label={gameStatus === GameStatus.Paused ? 'Resume' : 'Pause'}
+        >
+          {gameStatus === GameStatus.Paused ? '▶️' : 'P'}
+        </button>
+      </div>
+
+      {/* Action Buttons (A/B) */}
+      <div className="flex items-center space-x-3 sm:space-x-5 pointer-events-auto">
+        <button
+          onTouchStart={() => onTouchStart('Space')}
+          className={actionButtonClasses}
+          aria-label="Shoot"
+        >
+          <span className="font-bold text-3xl sm:text-4xl">B</span>
+          <span className="text-xs sm:text-sm">Shoot</span>
+        </button>
+        <button
+          onTouchStart={() => onTouchStart('ArrowUp')}
+          className={`${actionButtonClasses} bg-green-600 border-green-800 active:bg-green-500`}
+          aria-label="Jump"
+        >
+          <span className="font-bold text-3xl sm:text-4xl">A</span>
+          <span className="text-xs sm:text-sm">Jump</span>
+        </button>
+      </div>
+    </div>
+  );
+};

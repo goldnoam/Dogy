@@ -28,6 +28,7 @@ import {
   BOSS_PROJECTILE_HEIGHT,
 } from './constants';
 import { audioService } from './services/audioService';
+import { addHighScore, getHighScores } from './services/scoreManager';
 
 const checkCollision = (obj1: GameObject, obj2: GameObject): boolean => {
   if (!obj1 || !obj2) return false;
@@ -382,14 +383,18 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
     
     case 'GAME_OVER': {
       audioService.playGameOverSound();
-      const newHighScore = Math.max(state.score, state.highScore);
-      if (newHighScore > state.highScore) {
-        localStorage.setItem('fluffyDogHighScore', newHighScore.toString());
-      }
+      addHighScore(state.score);
+      const newHighScores = getHighScores();
+      const topScore = newHighScores.length > 0 ? newHighScores[0].score : 0;
+      
+      // Clean up old single high score from localStorage for migration
+      localStorage.removeItem('fluffyDogHighScore');
+
       return {
         ...state,
         status: GameStatus.GameOver,
-        highScore: newHighScore,
+        highScore: Math.max(state.score, topScore),
+        highScores: newHighScores,
       };
     }
       

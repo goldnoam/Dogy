@@ -15,6 +15,11 @@ export enum ZombieType {
   Zigzag = 'ZIGZAG',
 }
 
+export interface HighScoreEntry {
+  score: number;
+  date: string;
+}
+
 export interface GameObject {
   id: number;
   x: number;
@@ -44,6 +49,7 @@ export interface GameState {
   lives: number;
   score: number;
   highScore: number;
+  highScores: HighScoreEntry[];
   timeLeft: number;
   isBossLevel: boolean;
   player: GameObject;

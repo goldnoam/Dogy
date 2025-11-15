@@ -16,9 +16,12 @@ import {
   ENEMY_SPAWN_RATE_INITIAL,
 } from './constants';
 import { audioService } from './services/audioService';
+import { getHighScores } from './services/scoreManager';
 
 const App: React.FC = () => {
-  const getHighScore = () => parseInt(localStorage.getItem('fluffyDogHighScore') || '0', 10);
+  const initialHighScores = getHighScores();
+  const getTopScore = () => initialHighScores.length > 0 ? initialHighScores[0].score : 0;
+
 
   const initialPlayer: GameObject = {
     id: 0,
@@ -38,7 +41,8 @@ const App: React.FC = () => {
     level: 1,
     lives: 5,
     score: 0,
-    highScore: getHighScore(),
+    highScore: getTopScore(),
+    highScores: initialHighScores,
     timeLeft: LEVEL_DURATION,
     isBossLevel: false,
     player: initialPlayer,
@@ -147,7 +151,9 @@ const App: React.FC = () => {
   };
   
   const restartGame = () => {
-    dispatch({ type: 'RESTART_GAME', payload: {...initialState, player: initialPlayer, highScore: getHighScore()} });
+    const freshHighScores = getHighScores();
+    const topScore = freshHighScores.length > 0 ? freshHighScores[0].score : 0;
+    dispatch({ type: 'RESTART_GAME', payload: {...initialState, player: initialPlayer, highScores: freshHighScores, highScore: topScore } });
   };
   
   const resumeGame = () => {
@@ -195,6 +201,8 @@ const App: React.FC = () => {
     } else if (keyCode === 'Pause') {
       if (gameState.status === GameStatus.Playing) {
         dispatch({ type: 'PAUSE_GAME' });
+      } else if (gameState.status === GameStatus.Paused) {
+        dispatch({ type: 'RESUME_GAME' });
       }
     } else {
       // For continuous-press actions like movement
@@ -227,14 +235,14 @@ const App: React.FC = () => {
             transform: `scale(${scale})`,
             transformOrigin: 'top left'
           }}>
-            {gameState.status === GameStatus.Start && <StartScreen onStart={startGame} highScore={gameState.highScore} />}
+            {gameState.status === GameStatus.Start && <StartScreen onStart={startGame} highScores={gameState.highScores} />}
             {gameState.status === GameStatus.Playing && <GameScreen gameState={gameState} />}
             {gameState.status === GameStatus.Paused && <PauseScreen onResume={resumeGame} />}
             {gameState.status === GameStatus.GameOver && <GameOverScreen score={gameState.score} highScore={gameState.highScore} onRestart={restartGame} />}
           </div>
         </div>
-        {isTouchDevice && gameState.status === GameStatus.Playing && (
-          <MobileControls onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd} />
+        {isTouchDevice && (gameState.status === GameStatus.Playing || gameState.status === GameStatus.Paused) && (
+          <MobileControls onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd} gameStatus={gameState.status} />
         )}
       </div>
        <footer className="text-center text-gray-500 mt-2 sm:mt-4 text-xs sm:text-sm w-full max-w-4xl">
