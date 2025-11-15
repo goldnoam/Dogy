@@ -1,0 +1,104 @@
+
+import React from 'react';
+import { GameState, ZombieType } from '../types';
+import { GameObject } from './GameObject';
+import { HUD } from './HUD';
+import { ZOMBIE_TYPE_CONFIGS } from '../constants';
+
+interface GameScreenProps {
+  gameState: GameState;
+}
+
+export const GameScreen: React.FC<GameScreenProps> = ({ gameState }) => {
+  const { player, enemies, projectiles, boss, level, score, lives, timeLeft, isBossLevel, highScore, bossProjectiles } = gameState;
+
+  return (
+    <div 
+        className="w-full h-full relative overflow-hidden"
+    >
+        {/* Ground */}
+        <div 
+            className="absolute bottom-0 left-0 w-full"
+            style={{ height: '50px', backgroundImage: 'linear-gradient(to right, #4a332a, #6f4e37)', zIndex: 0 }}
+        />
+
+      <div 
+        className="relative z-10 w-full h-full"
+      >
+        <HUD 
+          lives={lives} 
+          score={score} 
+          level={level} 
+          timeLeft={Math.ceil(timeLeft)} 
+          isBossLevel={isBossLevel}
+          highScore={highScore}
+        />
+        
+        <GameObject {...player}>
+            <div className="text-5xl" style={{ transform: player.direction === 'left' ? 'scaleX(-1)' : 'scaleX(1)' }}>🐶</div>
+        </GameObject>
+
+        {enemies.map(enemy => {
+          const config = ZOMBIE_TYPE_CONFIGS[enemy.zombieType!];
+          return (
+            <React.Fragment key={enemy.id}>
+              <GameObject {...enemy}>
+                <div className="text-5xl" style={{ transform: enemy.direction === 'right' ? 'scaleX(-1)' : 'scaleX(1)' }}>
+                  {config.emoji}
+                </div>
+              </GameObject>
+              {enemy.zombieType === ZombieType.Tank && enemy.health! < enemy.maxHealth! && (
+                 <div 
+                    className="absolute bg-gray-500 rounded z-20" 
+                    style={{ 
+                        width: enemy.width, 
+                        height: 5,
+                        transform: `translate(${enemy.x}px, ${enemy.y - 10}px)`,
+                    }}
+                >
+                    <div 
+                        className="bg-red-500 h-full rounded" 
+                        style={{ width: `${(enemy.health! / enemy.maxHealth!) * 100}%` }}
+                    ></div>
+                </div>
+              )}
+            </React.Fragment>
+          )
+        })}
+        
+        {projectiles.map(p => (
+         <GameObject key={p.id} {...p}>
+            <div className="text-4xl drop-shadow-lg">{p.id % 2 === 0 ? '🦴' : '🍪'}</div>
+         </GameObject>
+        ))}
+
+        {bossProjectiles.map(p => (
+         <GameObject key={p.id} {...p}>
+            <div className="text-4xl">🔥</div>
+         </GameObject>
+        ))}
+
+        {boss && (
+          <>
+              <GameObject {...boss}>
+                <div className="text-7xl">👹</div>
+              </GameObject>
+              <div 
+                  className="absolute bg-gray-500 rounded z-20" 
+                  style={{ 
+                      width: boss.width, 
+                      height: 10,
+                      transform: `translate(${boss.x}px, ${boss.y - 15}px)`,
+                  }}
+              >
+                  <div 
+                      className="bg-red-500 h-full rounded" 
+                      style={{ width: `${(boss.health / boss.maxHealth) * 100}%` }}
+                  ></div>
+              </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+};
